@@ -1,0 +1,15 @@
+name: receiver_app
+description: Receiver and recorder for home cameras
+publish_to: none
+version: 1.0.0+1
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  mobile_scanner: ^6.0.2
+  path_provider: ^2.1.4
+  shared_preferences: ^2.3.2
+  wakelock_plus: ^1.2.8
+flutter:
+  uses-material-design: true
