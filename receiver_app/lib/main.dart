@@ -141,23 +141,96 @@ class ScanPage extends StatefulWidget {
 }
 
 class _ScanPageState extends State<ScanPage> {
+  final _ctrl = MobileScannerController(formats: const [BarcodeFormat.qrCode]);
   bool _done = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _finish(CamInfo i) {
+    if (_done) return;
+    _done = true;
+    Navigator.pop(context, i);
+  }
+
+  Future<void> _manual() async {
+    final ip = TextEditingController();
+    final key = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('إدخال يدوي'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+              controller: ip,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'عنوان الكاميرا (IP)')),
+          const SizedBox(height: 8),
+          TextField(
+              controller: key,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'الرمز')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('إضافة')),
+        ],
+      ),
+    );
+    if (ok == true && ip.text.trim().isNotEmpty && key.text.trim().isNotEmpty) {
+      _finish(CamInfo('كاميرا ${ip.text.trim()}', ip.text.trim(), 8080, key.text.trim()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('امسح رمز الكاميرا')),
-        body: MobileScanner(onDetect: (cap) {
-          if (_done) return;
-          for (final b in cap.barcodes) {
-            try {
-              final j = jsonDecode(b.rawValue ?? '');
-              if (j is Map && j['ip'] != null && j['k'] != null) {
-                _done = true;
-                Navigator.pop(context, CamInfo.fromJson(j));
-                return;
+        appBar: AppBar(title: const Text('امسح رمز الكاميرا'), actions: [
+          IconButton(
+              onPressed: () => _ctrl.switchCamera(),
+              icon: const Icon(Icons.cameraswitch),
+              tooltip: 'تبديل الكاميرا'),
+        ]),
+        body: Stack(fit: StackFit.expand, children: [
+          MobileScanner(
+            controller: _ctrl,
+            errorBuilder: (context, error, child) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'تعذر تشغيل الماسح\nالنوع: ${error.errorCode.name}\nالتفاصيل: ${error.errorDetails?.message ?? '-'}',
+                  textAlign: TextAlign.center,
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
+            ),
+            onDetect: (cap) {
+              for (final b in cap.barcodes) {
+                try {
+                  final j = jsonDecode(b.rawValue ?? '');
+                  if (j is Map && j['ip'] != null && j['k'] != null) {
+                    _finish(CamInfo.fromJson(j));
+                    return;
+                  }
+                } catch (_) {}
               }
-            } catch (_) {}
-          }
-        }),
+            },
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: FilledButton.tonalIcon(
+                    onPressed: _manual,
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text('إدخال يدوي')),
+              ),
+            ),
+          ),
+        ]),
       );
 }
 
