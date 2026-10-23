@@ -250,6 +250,7 @@ class _CameraPageState extends State<CameraPage> {
           ),
           const SizedBox(height: 12),
           Text('$_ip : $kPort', style: const TextStyle(color: Colors.white70)),
+          Text('الرمز: $_key', style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 8),
         ]),
       ),
